@@ -8,6 +8,50 @@ import { sendSlackNotification } from "./slack";
 
 dotenv.config();
 
+// ==================================================
+// REDIS CONNECTION
+// ==================================================
+
+const redisUrl =
+  process.env.REDIS_URL ||
+  "redis://127.0.0.1:6379";
+
+const parsedRedisUrl =
+  new URL(redisUrl);
+
+const redisConnection = {
+  host: parsedRedisUrl.hostname,
+
+  port:
+    Number(parsedRedisUrl.port) || 6379,
+
+  username:
+    parsedRedisUrl.username
+      ? decodeURIComponent(
+          parsedRedisUrl.username
+        )
+      : undefined,
+
+  password:
+    parsedRedisUrl.password
+      ? decodeURIComponent(
+          parsedRedisUrl.password
+        )
+      : undefined,
+
+  maxRetriesPerRequest: null,
+
+  ...(parsedRedisUrl.protocol === "rediss:"
+    ? {
+        tls: {},
+      }
+    : {}),
+};
+
+// ==================================================
+// START WORKER
+// ==================================================
+
 async function startWorker() {
   // --------------------------------------------------
   // CREATE ETHEREAL TEST ACCOUNT
@@ -21,6 +65,7 @@ async function startWorker() {
       host: testAccount.smtp.host,
       port: testAccount.smtp.port,
       secure: testAccount.smtp.secure,
+
       auth: {
         user: testAccount.user,
         pass: testAccount.pass,
@@ -87,7 +132,8 @@ async function startWorker() {
             from:
               "ReachInbox MVP <no-reply@reachinbox.local>",
 
-            to: email.recipient,
+            to:
+              email.recipient,
 
             subject:
               email.subject,
@@ -134,6 +180,7 @@ async function startWorker() {
         try {
           await elasticClient.update({
             index: "emails",
+
             id: String(emailId),
 
             doc: {
@@ -206,11 +253,16 @@ Email ID: ${emailId}`
     },
 
     {
-      connection: {
-        host: "127.0.0.1",
-        port: 6379,
-        maxRetriesPerRequest: null,
-      },
+      // ------------------------------------------------
+      // REDIS
+      // ------------------------------------------------
+
+      connection:
+        redisConnection,
+
+      // ------------------------------------------------
+      // WORKER CONCURRENCY
+      // ------------------------------------------------
 
       concurrency: 3,
     }
@@ -275,9 +327,9 @@ Email ID: ${emailId}`
   );
 }
 
-// --------------------------------------------------
-// START WORKER
-// --------------------------------------------------
+// ==================================================
+// START
+// ==================================================
 
 startWorker().catch(
   (error) => {
