@@ -3,38 +3,97 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export const elasticClient = new Client({
-  node: process.env.ELASTICSEARCH_URL || "http://localhost:9200",
-});
+// ==================================================
+// ELASTICSEARCH CONNECTION
+// ==================================================
+
+const elasticsearchUrl =
+  process.env.ELASTICSEARCH_URL ||
+  "http://localhost:9200";
+
+const elasticsearchApiKey =
+  process.env.ELASTICSEARCH_API_KEY;
+
+export const elasticClient =
+  new Client({
+    node: elasticsearchUrl,
+
+    ...(elasticsearchApiKey
+      ? {
+          auth: {
+            apiKey:
+              elasticsearchApiKey,
+          },
+        }
+      : {}),
+  });
+
+// ==================================================
+// EMAIL INDEX
+// ==================================================
 
 const EMAIL_INDEX = "emails";
 
+// ==================================================
+// CREATE EMAIL INDEX
+// ==================================================
+
 export async function createEmailIndex() {
-  const exists = await elasticClient.indices.exists({
-    index: EMAIL_INDEX,
-  });
+  const exists =
+    await elasticClient.indices.exists({
+      index: EMAIL_INDEX,
+    });
 
   if (!exists) {
     await elasticClient.indices.create({
       index: EMAIL_INDEX,
+
       mappings: {
         properties: {
-          id: { type: "integer" },
-          recipient: { type: "text" },
-          subject: { type: "text" },
-          body: { type: "text" },
-          scheduledAt: { type: "date" },
-          sentAt: { type: "date" },
-          status: { type: "keyword" },
+          id: {
+            type: "integer",
+          },
+
+          recipient: {
+            type: "text",
+          },
+
+          subject: {
+            type: "text",
+          },
+
+          body: {
+            type: "text",
+          },
+
+          scheduledAt: {
+            type: "date",
+          },
+
+          sentAt: {
+            type: "date",
+          },
+
+          status: {
+            type: "keyword",
+          },
         },
       },
     });
 
-    console.log("Elasticsearch emails index created ✅");
+    console.log(
+      "Elasticsearch emails index created ✅"
+    );
   } else {
-    console.log("Elasticsearch emails index already exists ✅");
+    console.log(
+      "Elasticsearch emails index already exists ✅"
+    );
   }
 }
+
+// ==================================================
+// INDEX EMAIL
+// ==================================================
 
 export async function indexEmail(email: {
   id: number;
@@ -47,17 +106,33 @@ export async function indexEmail(email: {
 }) {
   await elasticClient.index({
     index: EMAIL_INDEX,
+
     id: String(email.id),
+
     document: {
       id: email.id,
-      recipient: email.recipient,
-      subject: email.subject,
-      body: email.body,
-      scheduledAt: email.scheduledAt,
-      sentAt: email.sentAt ?? null,
-      status: email.status,
+
+      recipient:
+        email.recipient,
+
+      subject:
+        email.subject,
+
+      body:
+        email.body,
+
+      scheduledAt:
+        email.scheduledAt,
+
+      sentAt:
+        email.sentAt ?? null,
+
+      status:
+        email.status,
     },
   });
 
-  console.log(`📊 Email ${email.id} indexed in Elasticsearch ✅`);
+  console.log(
+    `📊 Email ${email.id} indexed in Elasticsearch ✅`
+  );
 }
