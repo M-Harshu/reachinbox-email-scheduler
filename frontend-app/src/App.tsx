@@ -8,6 +8,12 @@ import {
 
 import "./App.css";
 
+// Backend API URL
+// Netlify uses VITE_API_URL; local development falls back to localhost.
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:4000";
+
 type Email = {
   id: number;
   recipient: string;
@@ -165,7 +171,7 @@ function App() {
           : "sent";
 
       const response = await fetch(
-        `http://localhost:4000/api/emails?status=${status}`
+        `${API_URL}/api/emails?status=${status}`
       );
 
       if (!response.ok) {
@@ -199,7 +205,7 @@ function App() {
   const fetchStats = async () => {
     try {
       const response = await fetch(
-        "http://localhost:4000/api/emails"
+        `${API_URL}/api/emails`
       );
 
       if (!response.ok) {
@@ -490,7 +496,7 @@ function App() {
 
         const response =
           await fetch(
-            "http://localhost:4000/api/schedule",
+            `${API_URL}/api/schedule`,
             {
               method: "POST",
 
@@ -591,9 +597,7 @@ function App() {
     try {
       const response =
         await fetch(
-          `http://localhost:4000/api/search?q=${encodeURIComponent(
-            query
-          )}`
+          `${API_URL}/api/search?q=${encodeURIComponent(query)}`
         );
 
       if (!response.ok) {
